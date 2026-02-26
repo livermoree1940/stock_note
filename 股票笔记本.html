@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票笔记本</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#6B7280',
+                        success: '#10B981',
+                        danger: '#EF4444',
+                        warning: '#F59E0B',
+                        info: '#3B82F6',
+                        light: '#F3F4F6',
+                        dark: '#1F2937',
+                    },
+                    fontFamily: {
+                        sans: ['Microsoft YaHei', 'Arial', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .calendar-grid {
+                display: grid;
+                grid-template-columns: repeat(7, 1fr);
+                gap: 2px;
+            }
+            .editor-focus:focus {
+                outline: none;
+                ring: 2px solid theme('colors.primary');
+                ring-opacity: 0.2;
+            }
+        }
+    </style>
+</head>
+<body class="font-sans bg-gray-50 text-gray-800">
+    <div class="flex h-screen overflow-hidden">
+        <!-- 左侧行业导航 -->
+        <div class="w-64 bg-white border-r border-gray-200 flex flex-col">
+            <!-- 顶部标题 -->
+            <div class="p-4 border-b border-gray-200 bg-gray-50">
+                <h1 class="text-lg font-semibold text-gray-800">行业导航</h1>
+            </div>
+            
+            <!-- 行业列表 -->
+            <div id="industryList" class="flex-1 overflow-y-auto p-4">
+                <div class="space-y-2">
+                    <div class="font-medium text-sm text-gray-500 mb-2">主要行业</div>
+                    <!-- 行业项将通过JS动态添加 -->
+                    <div class="py-4 text-center text-gray-500">
+                        <i class="fa fa-spinner fa-spin mr-2"></i>
+                        加载中...
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 中间笔记列表 -->
+        <div class="w-80 bg-white border-r border-gray-200 flex flex-col">
+            <!-- 顶部操作栏 -->
+            <div class="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+                <h1 class="text-lg font-semibold text-gray-800">股票笔记</h1>
+                <div class="flex space-x-2">
+                    <button class="py-1 px-3 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition text-sm flex items-center" onclick="createFolder()">
+                        <i class="fa fa-folder mr-1"></i>
+                        文件夹
+                    </button>
+                    <button class="py-1 px-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition text-sm flex items-center" onclick="saveFolders()">
+                        <i class="fa fa-save mr-1"></i>
+                        保存结构
+                    </button>
+                    <button class="py-1 px-3 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition text-sm flex items-center" onclick="toggleCalendar()">
+                        <i class="fa fa-calendar mr-1"></i>
+                        日历
+                    </button>
+                    <button class="py-1 px-3 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition text-sm flex items-center" onclick="toggleFunction()">
+                        <i class="fa fa-exchange mr-1"></i>
+                        功能切换
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 日历部分 -->
+            <div id="calendarSection" class="border-b border-gray-200 bg-gray-50" style="display: none;">
+                <div class="p-3 flex justify-between items-center border-b border-gray-200">
+                    <button class="py-1 px-2 bg-gray-200 rounded hover:bg-gray-300 transition" onclick="changeMonth(-1)">
+                        <i class="fa fa-chevron-left"></i>
+                    </button>
+                    <h3 id="currentMonth" class="font-medium"></h3>
+                    <button class="py-1 px-2 bg-gray-200 rounded hover:bg-gray-300 transition" onclick="changeMonth(1)">
+                        <i class="fa fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div id="calendar" class="calendar-grid p-3 text-xs"></div>
+            </div>
+            
+            <!-- 笔记列表 -->
+            <div id="stockList" class="flex-1 overflow-y-auto p-4">
+                <!-- 股票项将通过JS动态添加 -->
+            </div>
+        </div>
+        
+        <!-- 右侧编辑器 -->
+        <div class="flex-1 bg-white flex flex-col">
+            <!-- 顶部标题栏 -->
+            <div class="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+                <h1 class="text-lg font-semibold text-gray-800" id="editorTitle">股票编辑器</h1>
+                <div class="flex space-x-2">
+                    <button type="submit" class="py-1 px-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition text-sm flex items-center" form="stockForm">
+                        <i class="fa fa-save mr-1"></i>
+                        保存
+                    </button>
+                    <button class="py-1 px-3 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition text-sm flex items-center" onclick="newNote()">
+                        <i class="fa fa-file-o mr-1"></i>
+                        新建
+                    </button>
+                    <button class="py-1 px-3 bg-danger text-white rounded-lg hover:bg-danger/90 transition text-sm flex items-center" onclick="deleteNote()">
+                        <i class="fa fa-trash mr-1"></i>
+                        删除
+                    </button>
+                    <button class="py-1 px-3 bg-success text-white rounded-lg hover:bg-success/90 transition text-sm flex items-center" onclick="openTonghuashun()">
+                        <i class="fa fa-external-link mr-1"></i>
+                        同花顺
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 编辑器内容 -->
+            <div class="flex-1 overflow-y-auto p-6">
+                <!-- 提示信息 -->
+                <div id="alert" class="mb-4 p-3 rounded-lg" style="display: none;"></div>
+                
+                <!-- 股票笔记板块 -->
+                <div id="stockNoteSection">
+                    <!-- 股票基本信息 -->
+                    <div class="grid grid-cols-4 gap-4 mb-6">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">股票代码</label>
+                            <input type="text" id="stockCode" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition" placeholder="代码">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">股票名称</label>
+                            <input type="text" id="stockName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition" placeholder="名称">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">概念信息</label>
+                            <input type="text" id="concept" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition" placeholder="概念">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">行业信息</label>
+                            <input type="text" id="industry" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition" placeholder="行业">
+                        </div>
+                    </div>
+                    
+                    <!-- 编辑器工具栏 -->
+                    <div class="mb-4 flex items-center space-x-2 pb-2 border-b border-gray-200">
+                        <button class="py-1 px-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition text-sm flex items-center" onclick="formatText('bold')">
+                            <i class="fa fa-bold"></i>
+                        </button>
+                        <button class="py-1 px-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition text-sm flex items-center" onclick="formatText('italic')">
+                            <i class="fa fa-italic"></i>
+                        </button>
+                        <button class="py-1 px-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition text-sm flex items-center" onclick="formatText('underline')">
+                            <i class="fa fa-underline"></i>
+                        </button>
+                        <button class="py-1 px-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition text-sm flex items-center" onclick="insertImage()">
+                            <i class="fa fa-image"></i>
+                        </button>
+                        <span class="text-xs text-gray-500 ml-4">提示: 您可以直接粘贴图片，或使用工具栏插入图片</span>
+                    </div>
+                    
+                    <!-- K线图表 -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-medium text-gray-700">K线图表</h3>
+                            <div class="flex space-x-2">
+                                <button class="py-1 px-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition text-sm" onclick="loadKline()">日K</button>
+                            </div>
+                        </div>
+                        <div id="klineChart" class="w-full h-[400px] border border-gray-300 rounded-lg"></div>
+                        <div id="klineData" class="hidden">
+                            <!-- K线数据将在这里显示 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 编辑器 -->
+                    <div id="notes" contenteditable="true" class="min-h-[300px] border border-gray-300 rounded-lg p-4 bg-white editor-focus">
+                        <!-- 编辑内容将在这里 -->
+                    </div>
+                </div>
+                
+                <!-- 赚钱效应板块 -->
+                <div id="moneyEffectSection" style="display: none;">
+                    <h3 class="font-medium text-gray-700 mb-4">赚钱效应分析</h3>
+                    
+                    <!-- 赚钱效应编辑器 -->
+                    <div id="moneyEffectNotes" contenteditable="true" class="min-h-[500px] border border-gray-300 rounded-lg p-4 bg-white editor-focus">
+                        <!-- 编辑内容将在这里 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <form id="stockForm"></form>
+
+    <script>
+        // 存储股票笔记和文件夹结构
+        let stockNotes = {};
+        let folders = { 'root': { name: '根目录', items: [] } };
+        let currentStockCode = null;
+        let expandedFolders = ['root'];
+        
+        // 日历相关
+        let calendarData = {};
+        let currentDate = new Date();
+        let showCalendar = false;
+        let selectedDate = null;
+        
+        // K线图表相关
+        let klineChart = null;
+        
+        // 功能切换函数
+        function toggleFunction() {
+            const stockNoteSection = document.getElementById('stockNoteSection');
+            const moneyEffectSection = document.getElementById('moneyEffectSection');
+            const editorTitle = document.getElementById('editorTitle');
+            
+            // 检查当前显示的板块
+            if (stockNoteSection.style.display !== 'none') {
+                // 切换到赚钱效应板块
+                stockNoteSection.style.display = 'none';
+                moneyEffectSection.style.display = 'block';
+                editorTitle.textContent = '赚钱效应分析';
+            } else {
+                // 切换到股票笔记板块
+                moneyEffectSection.style.display = 'none';
+                stockNoteSection.style.display = 'block';
+                editorTitle.textContent = '股票编辑器';
+            }
+        }
+
+        // 初始化页面
+        function init() {
+            // 并行加载所有数据
+            Promise.all([
+                fetch('/api/notes').then(response => response.json()),
+                fetch('/api/folders').then(response => response.json()),
+                fetch('/api/calendar').then(response => response.json())
+            ])
+            .then(([notesData, foldersData, calendarDataFromServer]) => {
+                // 加载股票数据
+                stockNotes = notesData;
+                console.log('加载到的股票数据:', Object.keys(stockNotes));
+                
+                // 加载文件夹结构
+                if (foldersData && foldersData.folders) {
+                    folders = foldersData.folders;
+                    console.log('从服务器加载的文件夹结构:', folders);
+                }
+                
+                // 加载展开的文件夹状态
+                if (foldersData && foldersData.expanded_folders) {
+                    expandedFolders = foldersData.expanded_folders;
+                }
+                
+                // 加载日历数据
+                if (calendarDataFromServer) {
+                    calendarData = calendarDataFromServer;
+                    console.log('从服务器加载的日历数据:', calendarData);
+                }
+                
+                // 确保所有股票都在文件夹中
+                const stocksInFolders = new Set();
+                Object.values(folders).forEach(folder => {
+                    if (folder.items) {
+                        folder.items.forEach(item => {
+                            if (!item.startsWith('folder_')) {
+                                stocksInFolders.add(item);
+                            }
+                        });
+                    }
+                });
+                
+                // 将不在任何文件夹中的股票添加到根目录
+                Object.keys(stockNotes).forEach(code => {
+                    if (!stocksInFolders.has(code)) {
+                        if (!folders.root) {
+                            folders.root = {
+                                name: '根目录',
+                                items: []
+                            };
+                        }
+                        if (!folders.root.items) {
+                            folders.root.items = [];
+                        }
+                        if (!folders.root.items.includes(code)) {
+                            folders.root.items.push(code);
+                            console.log('将股票添加到根目录:', code);
+                        }
+                    }
+                });
+                
+                // 保存更新后的文件夹结构
+                saveFolders();
+                console.log('最终文件夹结构:', folders);
+                
+                // 渲染股票列表和行业导航
+                renderStockList();
+                renderIndustryNavigation();
+                
+                console.log('渲染完成');
+            })
+            .catch(error => {
+                console.error('加载数据失败:', error);
+                showAlert('加载数据失败', 'danger');
+            });
+        }
+        
+        // 切换日历显示
+        function toggleCalendar() {
+            showCalendar = !showCalendar;
+            const calendarSection = document.getElementById('calendarSection');
+            if (showCalendar) {
+                calendarSection.style.display = 'block';
+                renderCalendar();
+            } else {
+                calendarSection.style.display = 'none';
+            }
+        }
+        
+        // 渲染日历
+        function renderCalendar() {
+            const calendar = document.getElementById('calendar');
+            const currentMonthEl = document.getElementById('currentMonth');
+            
+            // 设置当前月份标题
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            currentMonthEl.textContent = `${year}年${month + 1}月`;
+            
+            // 清空日历
+            calendar.innerHTML = '';
+            
+            // 添加星期标题
+            const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+            weekdays.forEach(day => {
+                const weekdayEl = document.createElement('div');
+                weekdayEl.className = 'text-center font-medium p-1';
+                weekdayEl.textContent = day;
+                calendar.appendChild(weekdayEl);
+            });
+            
+            // 获取当月第一天是星期几
+            const firstDay = new Date(year, month, 1);
+            const startDate = firstDay.getDay();
+            
+            // 获取当月的天数
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            // 获取上个月的天数
+            const daysInPrevMonth = new Date(year, month, 0).getDate();
+            
+            // 渲染日历天数
+            let dayCount = 1;
+            
+            // 上个月的天数
+            for (let i = startDate - 1; i >= 0; i--) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'text-center p-1 text-gray-400';
+                dayEl.textContent = daysInPrevMonth - i;
+                calendar.appendChild(dayEl);
+            }
+            
+            // 当前月的天数
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dayEl = document.createElement('div');
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                const isToday = dateStr === new Date().toISOString().split('T')[0];
+                const hasStocks = calendarData[dateStr] && calendarData[dateStr].length > 0;
+                
+                let classes = 'text-center p-1 rounded-lg cursor-pointer hover:bg-gray-200 transition flex flex-col items-center min-h-[40px]';
+                if (isToday) classes += ' bg-blue-100 font-medium';
+                if (hasStocks) classes += ' bg-green-100';
+                if (selectedDate === dateStr) classes += ' bg-blue-200';
+                
+                dayEl.className = classes;
+                dayEl.innerHTML = `<div>${i}</div>`;
+                
+                // 添加股票信息
+                if (hasStocks) {
+                    calendarData[dateStr].forEach(stockCode => {
+                        const stock = stockNotes[stockCode];
+                        if (stock) {
+                            const stockEl = document.createElement('div');
+                            stockEl.className = 'text-xs mt-1 max-w-full truncate';
+                            stockEl.textContent = stockCode;
+                            dayEl.appendChild(stockEl);
+                        }
+                    });
+                }
+                
+                // 添加日期字符串
+                dayEl.dataset.date = dateStr;
+                
+                // 添加点击事件
+                dayEl.addEventListener('click', () => {
+                    toggleDateEvents(dateStr);
+                });
+                
+                // 添加拖拽事件
+                dayEl.addEventListener('dragover', handleCalendarDragOver);
+                dayEl.addEventListener('drop', handleCalendarDrop);
+                dayEl.addEventListener('dragenter', handleCalendarDragEnter);
+                dayEl.addEventListener('dragleave', handleCalendarDragLeave);
+                
+                calendar.appendChild(dayEl);
+            }
+            
+            // 下个月的天数
+            const totalCells = 42; // 6行7列
+            const remainingCells = totalCells - (startDate + daysInMonth);
+            for (let i = 1; i <= remainingCells; i++) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'text-center p-1 text-gray-400';
+                dayEl.textContent = i;
+                calendar.appendChild(dayEl);
+            }
+        }
+        
+        // 切换月份
+        function changeMonth(direction) {
+            currentDate.setMonth(currentDate.getMonth() + direction);
+            renderCalendar();
+        }
+        
+        // 切换日期事件显示
+        function toggleDateEvents(dateStr) {
+            selectedDate = selectedDate === dateStr ? null : dateStr;
+            renderCalendar();
+            
+            // 显示或隐藏该日期的股票
+            const stockList = document.getElementById('stockList');
+            if (selectedDate && calendarData[selectedDate]) {
+                // 显示该日期的股票
+                stockList.innerHTML = '';
+                
+                const dateHeader = document.createElement('div');
+                dateHeader.className = 'p-3 font-medium text-gray-700 border-b border-gray-200';
+                dateHeader.textContent = `${selectedDate} 的股票`;
+                stockList.appendChild(dateHeader);
+                
+                calendarData[selectedDate].forEach(stockCode => {
+                    const stock = stockNotes[stockCode];
+                    if (stock) {
+                        const stockItem = document.createElement('div');
+                        stockItem.className = `p-3 rounded-lg hover:bg-gray-100 cursor-pointer ${currentStockCode === stockCode ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`;
+                        stockItem.onclick = () => selectNote(stockCode);
+                        stockItem.innerHTML = `
+                            <div class="font-medium text-gray-800">${stockCode}</div>
+                            <div class="text-sm text-gray-600 mt-1">${stock.name}</div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                ${stock.concept ? `概念: ${stock.concept} | ` : ''}
+                                ${stock.industry ? `行业: ${stock.industry}` : ''}
+                            </div>
+                        `;
+                        stockList.appendChild(stockItem);
+                    }
+                });
+            } else {
+                // 恢复显示所有股票
+                renderStockList();
+            }
+        }
+        
+        // 保存日历数据
+        function saveCalendar() {
+            // 通过API保存到服务器
+            fetch('/api/calendar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(calendarData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    console.log('日历数据保存成功');
+                } else {
+                    console.error('日历数据保存失败');
+                }
+            })
+            .catch(error => {
+                console.error('保存日历数据失败:', error);
+            });
+        }
+        
+        // 日历拖拽相关
+        function handleCalendarDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+        
+        function handleCalendarDragEnter(e) {
+            this.classList.add('bg-blue-100');
+        }
+        
+        function handleCalendarDragLeave(e) {
+            this.classList.remove('bg-blue-100');
+        }
+        
+        function handleCalendarDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            
+            this.classList.remove('bg-blue-100');
+            
+            const dateStr = this.dataset.date;
+            const stockCode = draggedItemId;
+            
+            if (dateStr && stockCode) {
+                // 添加股票到日历
+                if (!calendarData[dateStr]) {
+                    calendarData[dateStr] = [];
+                }
+                
+                if (!calendarData[dateStr].includes(stockCode)) {
+                    calendarData[dateStr].push(stockCode);
+                    saveCalendar();
+                    renderCalendar();
+                    showAlert(`股票 ${stockCode} 已添加到 ${dateStr}`, 'success');
+                }
+            }
+        }
+        
+        // 保存文件夹结构
+        function saveFolders() {
+            console.log('开始保存文件夹结构:', folders);
+            console.log('展开状态:', expandedFolders);
+            
+            // 通过API保存到服务器
+            fetch('/api/folders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ folders, expanded_folders: expandedFolders })
+            })
+            .then(response => {
+                console.log('保存请求响应状态:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('保存请求响应数据:', data);
+                if (data.status === 'success') {
+                    console.log('文件夹结构保存成功');
+                } else {
+                    console.error('文件夹结构保存失败:', data);
+                }
+            })
+            .catch(error => {
+                console.error('保存文件夹结构失败:', error);
+            });
+        }
+
+        // 创建新文件夹
+        function createFolder() {
+            const folderName = prompt('请输入文件夹名称:');
+            if (folderName && folderName.trim() !== '') {
+                const folderId = 'folder_' + Date.now();
+                folders[folderId] = {
+                    name: folderName.trim(),
+                    items: []
+                };
+                // 将新文件夹添加到根目录
+                if (!folders.root) {
+                    folders.root = {
+                        name: '根目录',
+                        items: []
+                    };
+                }
+                folders.root.items.push(folderId);
+                expandedFolders.push(folderId);
+                saveFolders();
+                renderStockList();
+            }
+        }
+
+        // 切换文件夹展开/折叠
+        function toggleFolder(folderId) {
+            const index = expandedFolders.indexOf(folderId);
+            if (index > -1) {
+                expandedFolders.splice(index, 1);
+            } else {
+                expandedFolders.push(folderId);
+            }
+            saveFolders();
+            renderStockList();
+        }
+
+        // 渲染股票列表（带文件夹结构）
+        function renderStockList() {
+            const stockList = document.getElementById('stockList');
+            stockList.innerHTML = '';
+
+            // 递归渲染文件夹结构
+            function renderFolder(folderId, level = 0) {
+                const folder = folders[folderId];
+                if (!folder) return;
+
+                // 创建文件夹元素
+                const folderItem = document.createElement('div');
+                folderItem.className = 'p-3 rounded-lg hover:bg-gray-100 cursor-pointer flex items-center justify-between';
+                folderItem.style.marginLeft = `${level * 16}px`;
+                folderItem.innerHTML = `
+                    <span class="flex items-center">
+                        <i class="fa fa-folder mr-2 text-gray-400"></i>
+                        <span>${folder.name}</span>
+                    </span>
+                    <i class="fa fa-chevron-${expandedFolders.includes(folderId) ? 'down' : 'right'} text-xs text-gray-400"></i>
+                `;
+                folderItem.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleFolder(folderId);
+                };
+                
+                // 添加拖拽属性
+                folderItem.draggable = true;
+                folderItem.dataset.type = 'folder';
+                folderItem.dataset.id = folderId;
+                folderItem.addEventListener('dragstart', handleDragStart);
+                folderItem.addEventListener('dragover', handleDragOver);
+                folderItem.addEventListener('drop', handleDrop);
+                folderItem.addEventListener('dragenter', handleDragEnter);
+                folderItem.addEventListener('dragleave', handleDragLeave);
+                
+                stockList.appendChild(folderItem);
+
+                // 如果文件夹展开，渲染其内容
+                if (expandedFolders.includes(folderId)) {
+                    folder.items.forEach(item => {
+                        if (item.startsWith('folder_')) {
+                            // 渲染子文件夹
+                            renderFolder(item, level + 1);
+                        } else {
+                            // 渲染股票
+                            const note = stockNotes[item];
+                            if (note) {
+                                const stockItem = document.createElement('div');
+                                stockItem.className = `p-3 rounded-lg hover:bg-gray-100 cursor-pointer ${currentStockCode === item ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`;
+                                stockItem.style.marginLeft = `${(level + 1) * 16}px`;
+                                stockItem.onclick = () => selectNote(item);
+                                // 使用后端计算的涨幅和距五日线幅度
+                                const changePercent = note.change_percent || 0;
+                                const ma5Deviation = note.ma5_distance || 0;
+                                
+                                stockItem.innerHTML = `
+                                    <div class="flex justify-between items-start">
+                                        <div class="font-medium text-gray-800">${item}</div>
+                                        <div class="text-xs flex flex-col items-end">
+                                            <span class="text-gray-700">${note.close || 0}</span>
+                                            <span class="${parseFloat(changePercent) >= 0 ? 'text-red-600' : 'text-green-600'}">${changePercent}%</span>
+                                            <span class="${parseFloat(ma5Deviation) >= 0 ? 'text-red-600' : 'text-green-600'}">偏离5日线: ${ma5Deviation}%</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-sm text-gray-600 mt-1">${note.name}</div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        ${note.concept ? `概念: ${note.concept} | ` : ''}
+                                        ${note.industry ? `行业: ${note.industry}` : ''}
+                                    </div>
+                                `;
+                                
+                                // 添加拖拽属性
+                                stockItem.draggable = true;
+                                stockItem.dataset.type = 'stock';
+                                stockItem.dataset.id = item;
+                                stockItem.dataset.parent = folderId;
+                                stockItem.addEventListener('dragstart', handleDragStart);
+                                stockItem.addEventListener('dragover', handleDragOver);
+                                stockItem.addEventListener('drop', handleDrop);
+                                stockItem.addEventListener('dragenter', handleDragEnter);
+                                stockItem.addEventListener('dragleave', handleDragLeave);
+                                
+                                stockList.appendChild(stockItem);
+                            }
+                        }
+                    });
+                }
+            }
+
+            // 从根目录开始渲染
+            renderFolder('root');
+        }
+
+        // 选择笔记
+        function selectNote(code) {
+            currentStockCode = code;
+            const note = stockNotes[code];
+            
+            // 填充表单
+            document.getElementById('stockCode').value = note.code;
+            document.getElementById('stockName').value = note.name;
+            document.getElementById('concept').value = note.concept || '';
+            document.getElementById('industry').value = note.industry || '';
+            document.getElementById('notes').innerHTML = note.notes || '';
+            
+            // 更新列表选中状态
+            renderStockList();
+            
+            // 自动加载K线数据
+            loadKline();
+        }
+
+        // 保存笔记
+        function saveNote() {
+            const code = document.getElementById('stockCode').value.trim();
+            if (!code) {
+                showAlert('请输入股票代码', 'danger');
+                return;
+            }
+
+            const name = document.getElementById('stockName').value.trim();
+            const concept = document.getElementById('concept').value.trim();
+            const industry = document.getElementById('industry').value.trim();
+            const notes = document.getElementById('notes').innerHTML;
+
+            // 创建或更新笔记
+            const noteData = {
+                code,
+                name,
+                concept,
+                industry,
+                notes,
+                timestamp: new Date().toISOString()
+            };
+
+            console.log('准备保存股票数据:', noteData);
+
+            fetch('/api/notes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(noteData)
+            })
+            .then(response => {
+                console.log('保存请求响应状态:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('保存请求响应数据:', data);
+                if (data.status === 'success') {
+                    // 重新加载所有笔记，以获取后端计算的值
+                    fetch('/api/notes')
+                        .then(response => response.json())
+                        .then(notes => {
+                            console.log('重新加载的股票数据:', Object.keys(notes));
+                            stockNotes = notes;
+                            currentStockCode = code;
+                            
+                            // 检查新股票是否在任何文件夹中
+                            let stockInFolder = false;
+                            Object.keys(folders).forEach(folderId => {
+                                const folder = folders[folderId];
+                                if (folder.items && folder.items.includes(code)) {
+                                    stockInFolder = true;
+                                }
+                            });
+                            
+                            console.log('股票是否在文件夹中:', stockInFolder);
+                            
+                            // 如果不在任何文件夹中，添加到根目录
+                            if (!stockInFolder) {
+                                if (!folders.root) {
+                                    folders.root = {
+                                        name: '根目录',
+                                        items: []
+                                    };
+                                }
+                                if (!folders.root.items.includes(code)) {
+                                    folders.root.items.push(code);
+                                    console.log('已将股票添加到根目录:', code);
+                                }
+                            }
+                            
+                            // 确保文件夹结构保存
+                            saveFolders();
+                            
+                            renderStockList();
+                            renderIndustryNavigation();
+                            showAlert('保存成功，已计算涨幅和偏离五日线幅度', 'success');
+                            // 强制刷新页面，确保看到最新的数据
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
+                        });
+                } else {
+                    showAlert(data.message || '保存失败', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('保存笔记失败:', error);
+                showAlert('保存失败', 'danger');
+            });
+        }
+
+        // 新建笔记
+        function newNote() {
+            currentStockCode = null;
+            // 手动清空所有输入字段
+            document.getElementById('stockCode').value = '';
+            document.getElementById('stockName').value = '';
+            document.getElementById('concept').value = '';
+            document.getElementById('industry').value = '';
+            document.getElementById('notes').innerHTML = '';
+            renderStockList();
+            showAlert('已清空表单，请输入新股票信息', 'info');
+        }
+
+        // 删除笔记
+        function deleteNote() {
+            if (currentStockCode) {
+                if (confirm('确定要删除此笔记吗？')) {
+                    fetch(`/api/notes/${currentStockCode}`, {
+                        method: 'DELETE'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            delete stockNotes[currentStockCode];
+                            newNote();
+                            renderIndustryNavigation();
+                            showAlert('删除成功', 'success');
+                        } else {
+                            showAlert(data.message || '删除失败', 'danger');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('删除笔记失败:', error);
+                        showAlert('删除失败', 'danger');
+                    });
+                }
+            } else {
+                showAlert('请先选择要删除的笔记', 'danger');
+            }
+        }
+
+        // 打开同花顺
+        function openTonghuashun() {
+            const code = document.getElementById('stockCode').value.trim();
+            if (!code) {
+                showAlert('请输入股票代码', 'danger');
+                return;
+            }
+            
+            fetch('/api/open_ths', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showAlert('已打开同花顺', 'success');
+                } else {
+                    showAlert(data.message || '打开同花顺失败', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('打开同花顺失败:', error);
+                showAlert('打开同花顺失败', 'danger');
+            });
+        }
+
+        // 显示提示信息
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            
+            // 移除所有现有的 alert 类
+            alert.className = 'mb-4 p-3 rounded-lg';
+            
+            // 添加对应类型的类
+            switch (type) {
+                case 'success':
+                    alert.className += ' bg-green-100 text-green-700 border border-green-200';
+                    break;
+                case 'danger':
+                    alert.className += ' bg-red-100 text-red-700 border border-red-200';
+                    break;
+                case 'warning':
+                    alert.className += ' bg-yellow-100 text-yellow-700 border border-yellow-200';
+                    break;
+                case 'info':
+                    alert.className += ' bg-blue-100 text-blue-700 border border-blue-200';
+                    break;
+            }
+            
+            alert.style.display = 'block';
+
+            // 3秒后隐藏
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 3000);
+        }
+
+        // 文本格式化函数
+        function formatText(command) {
+            document.execCommand(command, false, null);
+            document.getElementById('notes').focus();
+        }
+
+        // 插入图片函数
+        function insertImage() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'max-w-full h-auto my-4';
+                        document.execCommand('insertHTML', false, img.outerHTML);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            input.click();
+        }
+
+        // 处理Ctrl+V粘贴图片到内容编辑区
+        document.getElementById('notes').addEventListener('paste', function(e) {
+            const items = e.clipboardData.items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    e.preventDefault();
+                    const file = items[i].getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'max-w-full h-auto my-4';
+                        document.execCommand('insertHTML', false, img.outerHTML);
+                    };
+                    reader.readAsDataURL(file);
+                    break;
+                }
+            }
+        });
+
+        // 处理键盘快捷键 Ctrl+Enter 打开同花顺
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                openTonghuashun();
+            }
+        });
+
+        // 拖拽相关变量
+        let draggedItem = null;
+        let draggedItemType = null;
+        let draggedItemId = null;
+
+        // 处理拖拽开始
+        function handleDragStart(e) {
+            draggedItem = this;
+            draggedItemType = this.dataset.type;
+            draggedItemId = this.dataset.id;
+            this.classList.add('opacity-50');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', draggedItemId);
+        }
+
+        // 处理拖拽经过
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        // 处理拖拽进入
+        function handleDragEnter(e) {
+            this.classList.add('bg-gray-100');
+        }
+
+        // 处理拖拽离开
+        function handleDragLeave(e) {
+            this.classList.remove('bg-gray-100');
+        }
+
+        // 处理放置
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+
+            this.classList.remove('bg-gray-100');
+            draggedItem.classList.remove('opacity-50');
+
+            const dropTargetType = this.dataset.type;
+            const dropTargetId = this.dataset.id;
+            const dropTargetParent = this.dataset.parent;
+
+            // 找到拖拽项的父文件夹
+            let sourceFolderId = null;
+            Object.keys(folders).forEach(folderId => {
+                const folder = folders[folderId];
+                if (folder.items && folder.items.includes(draggedItemId)) {
+                    sourceFolderId = folderId;
+                }
+            });
+
+            if (!sourceFolderId) return;
+
+            // 从源文件夹中移除拖拽项
+            const sourceFolder = folders[sourceFolderId];
+            const sourceIndex = sourceFolder.items.indexOf(draggedItemId);
+            if (sourceIndex > -1) {
+                sourceFolder.items.splice(sourceIndex, 1);
+            }
+
+            // 处理不同的放置目标
+            if (dropTargetType === 'folder') {
+                // 放置到文件夹中
+                const targetFolder = folders[dropTargetId];
+                if (!targetFolder.items) {
+                    targetFolder.items = [];
+                }
+                targetFolder.items.push(draggedItemId);
+            } else if (dropTargetType === 'stock') {
+                // 放置到股票旁边（重新排序）
+                const targetFolderId = dropTargetParent || 'root';
+                const targetFolder = folders[targetFolderId];
+                if (targetFolder) {
+                    const targetIndex = targetFolder.items.indexOf(dropTargetId);
+                    if (targetIndex > -1) {
+                        targetFolder.items.splice(targetIndex, 0, draggedItemId);
+                    } else {
+                        targetFolder.items.push(draggedItemId);
+                    }
+                }
+            }
+
+            saveFolders();
+            renderStockList();
+            return false;
+        }
+
+        // 渲染行业导航
+        function renderIndustryNavigation() {
+            const industryList = document.getElementById('industryList');
+            
+            // 统计每个行业的股票数量
+            const industryCount = {};
+            Object.values(stockNotes).forEach(note => {
+                const industry = note.industry || '未分类';
+                if (industryCount[industry]) {
+                    industryCount[industry]++;
+                } else {
+                    industryCount[industry] = 1;
+                }
+            });
+            
+            // 生成行业列表
+            let html = `
+                <div class="space-y-2">
+                    <div class="font-medium text-sm text-gray-500 mb-2">主要行业</div>
+                    <div class="py-2 px-3 rounded-lg hover:bg-gray-100 cursor-pointer flex items-center justify-between" onclick="showAllStocks()">
+                        <span class="flex items-center">
+                            <i class="fa fa-folder-open mr-2 text-gray-400"></i>
+                            <span>全部股票</span>
+                        </span>
+                        <span class="bg-blue-100 text-blue-600 text-xs px-2 py-0.5 rounded-full">${Object.keys(stockNotes).length}</span>
+                    </div>
+            `;
+            
+            // 按行业名称排序
+            const sortedIndustries = Object.keys(industryCount).sort();
+            
+            sortedIndustries.forEach(industry => {
+                html += `
+                    <div class="py-2 px-3 rounded-lg hover:bg-gray-100 cursor-pointer flex items-center justify-between" onclick="showStocksByIndustry('${industry}')">
+                        <span class="flex items-center">
+                            <i class="fa fa-industry mr-2 text-gray-400"></i>
+                            <span>${industry}</span>
+                        </span>
+                        <span class="bg-green-100 text-green-600 text-xs px-2 py-0.5 rounded-full">${industryCount[industry]}</span>
+                    </div>
+                `;
+            });
+            
+            html += `</div>`;
+            industryList.innerHTML = html;
+        }
+
+        // 显示所有股票
+        function showAllStocks() {
+            renderStockList();
+        }
+
+        // 按行业显示股票
+        function showStocksByIndustry(industry) {
+            const stockList = document.getElementById('stockList');
+            stockList.innerHTML = '';
+            
+            const industryHeader = document.createElement('div');
+            industryHeader.className = 'p-3 font-medium text-gray-700 border-b border-gray-200';
+            industryHeader.textContent = `${industry} 行业的股票`;
+            stockList.appendChild(industryHeader);
+            
+            Object.keys(stockNotes).forEach(code => {
+                const note = stockNotes[code];
+                if (note.industry === industry) {
+                    const stockItem = document.createElement('div');
+                    stockItem.className = `p-3 rounded-lg hover:bg-gray-100 cursor-pointer ${currentStockCode === code ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`;
+                    stockItem.onclick = () => selectNote(code);
+                    // 使用后端计算的涨幅和距五日线幅度
+                    const changePercent = note.change_percent || 0;
+                    const ma5Deviation = note.ma5_distance || 0;
+                    
+                    stockItem.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div class="font-medium text-gray-800">${code}</div>
+                            <div class="text-xs flex flex-col items-end">
+                                <span class="text-gray-700">${note.close || 0}</span>
+                                <span class="${parseFloat(changePercent) >= 0 ? 'text-red-600' : 'text-green-600'}">${changePercent}%</span>
+                                <span class="${parseFloat(ma5Deviation) >= 0 ? 'text-red-600' : 'text-green-600'}">偏离5日线: ${ma5Deviation}%</span>
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-600 mt-1">${note.name}</div>
+                        <div class="text-xs text-gray-500 mt-1">
+                            ${note.concept ? `概念: ${note.concept} | ` : ''}
+                            ${note.industry ? `行业: ${note.industry}` : ''}
+                        </div>
+                    `;
+                    stockList.appendChild(stockItem);
+                }
+            });
+        }
+
+        // 打开排序页面
+        function openSortPage() {
+            // 这里可以实现排序功能
+            showAlert('排序功能开发中', 'info');
+        }
+
+        // 加载K线数据
+        function loadKline() {
+            const code = document.getElementById('stockCode').value.trim();
+            if (!code) {
+                showAlert('请先输入股票代码', 'warning');
+                return;
+            }
+            
+            // 显示加载中提示
+            showAlert('正在加载K线数据...', 'info');
+            
+            // 加载数据（只获取日线数据，1000个交易日）
+            fetch(`/api/kline?code=${code}&frequency=1d&count=1000`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('获取到的K线数据:', data);
+                    if (data.status === 'success') {
+                        console.log('K线数据详情:', data.data);
+                        if (data.data && data.data.length > 0) {
+                            showAlert('K线数据加载成功', 'success');
+                            updateKlineChart(data.data);
+                        } else {
+                            showAlert('没有K线数据', 'warning');
+                        }
+                    } else {
+                        showAlert(data.message || '获取K线数据失败', 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('获取K线数据失败:', error);
+                    showAlert('获取K线数据失败', 'danger');
+                });
+        }
+        
+        // 计算移动平均线
+        function calculateMA(data, period) {
+            const result = [];
+            for (let i = 0; i < data.length; i++) {
+                if (i < period - 1) {
+                    result.push(null);
+                } else {
+                    let sum = 0;
+                    for (let j = 0; j < period; j++) {
+                        sum += data[i - j];
+                    }
+                    result.push(sum / period);
+                }
+            }
+            return result;
+        }
+
+        // 更新K线图表
+        function updateKlineChart(klineData) {
+            if (!klineData || klineData.length === 0) {
+                showAlert('没有K线数据', 'warning');
+                return;
+            }
+            
+            const chartElement = document.getElementById('klineChart');
+            const klineDataElement = document.getElementById('klineData');
+            
+            // 隐藏原始数据（不再调试）
+            klineDataElement.innerHTML = '';
+            klineDataElement.classList.add('hidden');
+            
+            // 准备数据
+            const dates = klineData.map(item => item.date);
+            const open = klineData.map(item => item.open);
+            const high = klineData.map(item => item.high);
+            const low = klineData.map(item => item.low);
+            const close = klineData.map(item => item.close);
+            const volume = klineData.map(item => item.volume);
+            
+            // 计算移动平均线
+            const ma20 = calculateMA(close, 20);
+            const ma60 = calculateMA(close, 60);
+            
+            // 创建K线数据
+            const data = [
+                {
+                    x: dates,
+                    open: open,
+                    high: high,
+                    low: low,
+                    close: close,
+                    type: 'candlestick',
+                    name: 'K线',
+                    increasing: {
+                        line: {
+                            color: '#f64e60'
+                        }
+                    },
+                    decreasing: {
+                        line: {
+                            color: '#0bb783'
+                        }
+                    },
+                    yaxis: 'y1'
+                },
+                {
+                    x: dates,
+                    y: ma20,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: 'MA20',
+                    line: {
+                        color: '#FF9500',
+                        width: 1
+                    },
+                    yaxis: 'y1'
+                },
+                {
+                    x: dates,
+                    y: ma60,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: 'MA60',
+                    line: {
+                        color: '#34A853',
+                        width: 1
+                    },
+                    yaxis: 'y1'
+                },
+                {
+                    x: dates,
+                    y: volume,
+                    type: 'bar',
+                    name: '成交量',
+                    yaxis: 'y2',
+                    marker: {
+                        color: klineData.map((item, i) => {
+                            return item.close >= item.open ? '#f64e60' : '#0bb783';
+                        })
+                    }
+                }
+            ];
+            
+            // 创建布局
+            const layout = {
+                title: 'K线图表',
+                xaxis: {
+                    title: '日期',
+                    type: 'category',
+                    showticklabels: false // 隐藏横轴日期标签
+                },
+                yaxis: {
+                    title: '价格',
+                    type: 'linear',
+                    domain: [0.3, 1]
+                },
+                yaxis2: {
+                    title: '成交量',
+                    type: 'linear',
+                    domain: [0, 0.25],
+                    anchor: 'x'
+                },
+                dragmode: 'zoom',
+                showlegend: true,
+                margin: {
+                    b: 40 // 减少底部边距，因为不再显示日期标签
+                },
+                hovermode: 'x unified' // 统一的悬停模式，显示完整的日期信息
+            };
+            
+            // 使用Plotly.newPlot创建图表
+            Plotly.newPlot(chartElement, data, layout);
+        }
+
+        // 表单提交
+        document.getElementById('stockForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveNote();
+        });
+
+        // 自动保存功能
+        let autoSaveTimer = null;
+        
+        function startAutoSave() {
+            // 清除现有定时器
+            if (autoSaveTimer) {
+                clearInterval(autoSaveTimer);
+            }
+            
+            // 设置新的定时器，每10秒自动保存一次
+            autoSaveTimer = setInterval(() => {
+                // 自动保存笔记
+                const code = document.getElementById('stockCode').value.trim();
+                const notes = document.getElementById('notes').innerHTML.trim();
+                
+                // 只有当有股票代码和内容时才自动保存笔记
+                if (code && notes) {
+                    console.log('自动保存笔记...');
+                    saveNote();
+                }
+                
+                // 自动保存文件夹结构
+                console.log('自动保存文件夹结构...');
+                saveFolders();
+            }, 10000); // 10秒
+        }
+        
+        // 监听编辑事件，开始自动保存
+        document.getElementById('notes').addEventListener('input', startAutoSave);
+        document.getElementById('stockCode').addEventListener('input', startAutoSave);
+
+        // 初始化
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+Flask
+pyautogui
+pygetwindow
+Pillow
