@@ -6,11 +6,11 @@
     "industry": "白酒III",
     "notes": "\n                        <!-- 编辑内容将在这里 -->\n                    ",
     "timestamp": "2026-02-24T15:57:19.241Z",
-    "close": 1466.8,
-    "ma5": 1489.57,
-    "ma5_distance": -1.53,
-    "change_percent": -1.25,
-    "yesterdayPrice": 1485.3
+    "close": 1466.21,
+    "ma5": 1479.31,
+    "ma5_distance": -0.89,
+    "change_percent": -1.71,
+    "yesterdayPrice": 1491.66
   },
   "601006": {
     "code": "601006",
@@ -19,11 +19,11 @@
     "industry": "铁路运输III",
     "notes": "\n                    <!-- 编辑内容将在这里 -->\n                ",
     "timestamp": "2026-02-25T04:01:51.872Z",
-    "close": 5.05,
-    "ma5": 5.07,
-    "ma5_distance": -0.39,
-    "change_percent": 0.2,
-    "yesterdayPrice": 5.04
+    "close": 5.07,
+    "ma5": 5.06,
+    "ma5_distance": 0.2,
+    "change_percent": -0.39,
+    "yesterdayPrice": 5.09
   },
   "600900": {
     "code": "600900",
@@ -32,11 +32,11 @@
     "industry": "水电III",
     "notes": "等超跌后融资余额大增",
     "timestamp": "2026-02-24T15:51:00.553Z",
-    "close": 26.05,
-    "ma5": 26.24,
-    "ma5_distance": -0.72,
-    "change_percent": 0.19,
-    "yesterdayPrice": 26.0
+    "close": 26.04,
+    "ma5": 26.04,
+    "ma5_distance": 0.0,
+    "change_percent": 0.27,
+    "yesterdayPrice": 25.97
   },
   "601838": {
     "code": "601838",
@@ -45,11 +45,11 @@
     "industry": "城商行III",
     "notes": "",
     "timestamp": "2026-02-24T15:20:19.599Z",
-    "close": 16.15,
-    "ma5": 16.37,
-    "ma5_distance": -1.34,
-    "change_percent": -0.8,
-    "yesterdayPrice": 16.28
+    "close": 16.19,
+    "ma5": 16.21,
+    "ma5_distance": -0.12,
+    "change_percent": 0.81,
+    "yesterdayPrice": 16.06
   },
   "002497": {
     "code": "002497",
@@ -58,11 +58,11 @@
     "industry": "民爆用品III",
     "notes": "",
     "timestamp": "2026-02-24T15:24:16.416Z",
-    "close": 28.13,
-    "ma5": 26.9,
-    "ma5_distance": 4.57,
-    "change_percent": 3.57,
-    "yesterdayPrice": 27.16
+    "close": 26.44,
+    "ma5": 27.61,
+    "ma5_distance": -4.24,
+    "change_percent": -8.76,
+    "yesterdayPrice": 28.98
   },
   "600132": {
     "code": "600132",
@@ -71,11 +71,11 @@
     "industry": "啤酒III",
     "notes": "",
     "timestamp": "2026-02-24T15:32:36.705Z",
-    "close": 54.24,
-    "ma5": 54.47,
-    "ma5_distance": -0.42,
-    "change_percent": 0.22,
-    "yesterdayPrice": 54.12
+    "close": 55.0,
+    "ma5": 54.43,
+    "ma5_distance": 1.05,
+    "change_percent": 0.66,
+    "yesterdayPrice": 54.64
   },
   "600080": {
     "code": "600080",
@@ -84,11 +84,11 @@
     "industry": "中药III",
     "notes": "",
     "timestamp": "2026-02-24T15:35:07.771Z",
-    "close": 8.49,
-    "ma5": 8.37,
-    "ma5_distance": 1.43,
-    "change_percent": -1.16,
-    "yesterdayPrice": 8.59
+    "close": 9.0,
+    "ma5": 8.69,
+    "ma5_distance": 3.57,
+    "change_percent": 1.47,
+    "yesterdayPrice": 8.87
   },
   "600000": {
     "code": "600000",
@@ -97,11 +97,11 @@
     "industry": "银行III",
     "notes": "测试股票",
     "timestamp": "2026-02-25T03:25:35.987Z",
-    "close": 9.9,
-    "ma5": 10.02,
-    "ma5_distance": -1.2,
-    "change_percent": 0.1,
-    "yesterdayPrice": 9.89
+    "close": 9.73,
+    "ma5": 9.86,
+    "ma5_distance": -1.32,
+    "change_percent": -0.61,
+    "yesterdayPrice": 9.79
   },
   "000002": {
     "code": "000002",
@@ -110,11 +110,11 @@
     "industry": "房地产开发III",
     "notes": "",
     "timestamp": "2026-02-25T02:28:02.369Z",
-    "close": 4.92,
-    "ma5": 4.92,
-    "ma5_distance": 0.0,
-    "change_percent": -1.01,
-    "yesterdayPrice": 4.97
+    "close": 4.82,
+    "ma5": 4.93,
+    "ma5_distance": -2.23,
+    "change_percent": -3.6,
+    "yesterdayPrice": 5.0
   },
   "601728": {
     "code": "601728",
@@ -123,11 +123,11 @@
     "industry": "电信运营商III",
     "notes": "",
     "timestamp": "2026-02-24T15:47:22.973Z",
-    "close": 5.73,
-    "ma5": 5.71,
-    "ma5_distance": 0.35,
-    "change_percent": 1.06,
-    "yesterdayPrice": 5.67
+    "close": 5.68,
+    "ma5": 5.7,
+    "ma5_distance": -0.35,
+    "change_percent": -0.87,
+    "yesterdayPrice": 5.73
   },
   "600050": {
     "code": "600050",
@@ -136,11 +136,11 @@
     "industry": "电信运营商III",
     "notes": "",
     "timestamp": "2026-02-24T15:48:05.832Z",
-    "close": 4.85,
-    "ma5": 4.84,
-    "ma5_distance": 0.21,
-    "change_percent": 1.04,
-    "yesterdayPrice": 4.8
+    "close": 4.88,
+    "ma5": 4.85,
+    "ma5_distance": 0.62,
+    "change_percent": 0.0,
+    "yesterdayPrice": 4.88
   },
   "600030": {
     "code": "600030",
@@ -149,10 +149,23 @@
     "industry": "证券III",
     "notes": "",
     "timestamp": "2026-02-24T16:01:01.440Z",
-    "close": 27.63,
-    "ma5": 27.85,
-    "ma5_distance": -0.79,
-    "change_percent": 0.04,
-    "yesterdayPrice": 27.62
+    "close": 27.38,
+    "ma5": 27.65,
+    "ma5_distance": -0.98,
+    "change_percent": -1.3,
+    "yesterdayPrice": 27.74
+  },
+  "002905": {
+    "code": "002905",
+    "name": "金逸影视",
+    "concept": "",
+    "industry": "院线III",
+    "notes": "\n                        <!-- 编辑内容将在这里 -->\n                    ",
+    "timestamp": "2026-02-26T15:02:22.324Z",
+    "close": 10.88,
+    "ma5": 11.56,
+    "ma5_distance": -5.88,
+    "change_percent": -3.12,
+    "yesterdayPrice": 11.23
   }
 }

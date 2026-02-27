@@ -610,6 +610,42 @@
                 renderStockList();
             }
         }
+        
+        // 进入编辑模式
+        function enterEditMode(folderId, folderNameSpan, folderNameInput) {
+            // 隐藏显示元素，显示编辑元素
+            folderNameSpan.classList.add('hidden');
+            folderNameInput.classList.remove('hidden');
+            
+            // 聚焦并全选输入框内容
+            folderNameInput.focus();
+            folderNameInput.select();
+        }
+        
+        // 保存文件夹名称
+        function saveFolderName(folderId, folderNameSpan, folderNameInput) {
+            const newName = folderNameInput.value.trim();
+            if (newName) {
+                const folder = folders[folderId];
+                if (folder) {
+                    folder.name = newName;
+                    saveFolders();
+                    folderNameSpan.textContent = newName;
+                }
+            }
+            // 隐藏编辑元素，显示显示元素
+            folderNameInput.classList.add('hidden');
+            folderNameSpan.classList.remove('hidden');
+        }
+        
+        // 取消编辑
+        function cancelEdit(folderNameSpan, folderNameInput) {
+            // 恢复原始值
+            folderNameInput.value = folderNameSpan.textContent;
+            // 隐藏编辑元素，显示显示元素
+            folderNameInput.classList.add('hidden');
+            folderNameSpan.classList.remove('hidden');
+        }
 
         // 切换文件夹展开/折叠
         function toggleFolder(folderId) {
@@ -637,17 +673,70 @@
                 const folderItem = document.createElement('div');
                 folderItem.className = 'p-3 rounded-lg hover:bg-gray-100 cursor-pointer flex items-center justify-between';
                 folderItem.style.marginLeft = `${level * 16}px`;
-                folderItem.innerHTML = `
-                    <span class="flex items-center">
-                        <i class="fa fa-folder mr-2 text-gray-400"></i>
-                        <span>${folder.name}</span>
-                    </span>
-                    <i class="fa fa-chevron-${expandedFolders.includes(folderId) ? 'down' : 'right'} text-xs text-gray-400"></i>
-                `;
+                
+                // 创建文件夹名称容器
+                const folderNameContainer = document.createElement('span');
+                folderNameContainer.className = 'flex items-center';
+                
+                // 创建文件夹图标
+                const folderIcon = document.createElement('i');
+                folderIcon.className = 'fa fa-folder mr-2 text-gray-400';
+                
+                // 创建文件夹名称显示元素
+                const folderNameSpan = document.createElement('span');
+                folderNameSpan.className = 'folder-name';
+                folderNameSpan.textContent = folder.name;
+                
+                // 创建文件夹名称编辑元素
+                const folderNameInput = document.createElement('input');
+                folderNameInput.type = 'text';
+                folderNameInput.className = 'border border-primary rounded px-2 py-0.5 text-sm hidden';
+                folderNameInput.value = folder.name;
+                
+                // 组装文件夹名称容器
+                folderNameContainer.appendChild(folderIcon);
+                folderNameContainer.appendChild(folderNameSpan);
+                folderNameContainer.appendChild(folderNameInput);
+                
+                // 创建展开/折叠图标
+                const chevronIcon = document.createElement('i');
+                chevronIcon.className = `fa fa-chevron-${expandedFolders.includes(folderId) ? 'down' : 'right'} text-xs text-gray-400`;
+                
+                // 组装文件夹元素
+                folderItem.appendChild(folderNameContainer);
+                folderItem.appendChild(chevronIcon);
+                
+                // 点击事件 - 展开/折叠文件夹
                 folderItem.onclick = (e) => {
-                    e.stopPropagation();
-                    toggleFolder(folderId);
+                    // 避免点击编辑框时触发展开/折叠
+                    if (!e.target.closest('input')) {
+                        e.stopPropagation();
+                        toggleFolder(folderId);
+                    }
                 };
+                
+                // 右键点击事件 - 进入编辑模式
+                folderItem.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    if (folderId !== 'root') { // 根目录不可重命名
+                        enterEditMode(folderId, folderNameSpan, folderNameInput);
+                    }
+                });
+                
+                // 输入框失去焦点事件 - 保存修改
+                folderNameInput.addEventListener('blur', function() {
+                    saveFolderName(folderId, folderNameSpan, folderNameInput);
+                });
+                
+                // 输入框回车键事件 - 保存修改
+                folderNameInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        saveFolderName(folderId, folderNameSpan, folderNameInput);
+                    } else if (e.key === 'Escape') {
+                        // 按ESC取消编辑
+                        cancelEdit(folderNameSpan, folderNameInput);
+                    }
+                });
                 
                 // 添加拖拽属性
                 folderItem.draggable = true;
